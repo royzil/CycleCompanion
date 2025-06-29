@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Calendar, Heart, Info, BookOpen, Gift, Coffee, Thermometer, Activity, Moon, Flower2, Sun, CloudRain } from 'lucide-react';
 
-const CycleCompanion = () => {
+export default function CycleCompanion() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
   const [cycleData, setCycleData] = useState({});
   const [activeTab, setActiveTab] = useState('calendar');
   const [cycleLength, setCycleLength] = useState(28);
@@ -17,13 +16,20 @@ const CycleCompanion = () => {
     return 'luteal';
   };
 
-  // Add period start date
-  const addPeriodStart = (date) => {
+  // Add or remove period start date
+  const togglePeriodStart = (date) => {
     const key = date.toDateString();
-    setCycleData(prev => ({
-      ...prev,
-      [key]: { type: 'period_start', phase: 'menstrual' }
-    }));
+    setCycleData(prev => {
+      const newData = { ...prev };
+      if (newData[key] && newData[key].type === 'period_start') {
+        // Remove period start
+        delete newData[key];
+      } else {
+        // Add period start
+        newData[key] = { type: 'period_start', phase: 'menstrual' };
+      }
+      return newData;
+    });
   };
 
   // Get phase for a specific date based on cycle data
@@ -56,7 +62,6 @@ const CycleCompanion = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
@@ -232,6 +237,15 @@ const CycleCompanion = () => {
         {/* Calendar Tab */}
         {activeTab === 'calendar' && (
           <div className="bg-white rounded-xl shadow-lg p-6">
+            {/* Instructions */}
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-semibold text-blue-800 mb-2">📋 How to Use</h3>
+              <p className="text-blue-700 text-sm">
+                <strong>Click any date</strong> to mark it as a period start date. Click again to remove it. 
+                Period start dates are marked with a red "P" badge and automatically calculate the cycle phases.
+              </p>
+            </div>
+
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
@@ -278,20 +292,23 @@ const CycleCompanion = () => {
                 return (
                   <div
                     key={index}
-                    onClick={() => {
-                      setSelectedDate(date);
-                      if (window.confirm('Mark this as period start date?')) {
-                        addPeriodStart(date);
-                      }
-                    }}
+                    onClick={() => togglePeriodStart(date)}
                     className={`
                       relative h-12 flex items-center justify-center cursor-pointer rounded-lg border-2 transition-all hover:scale-105
                       ${isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}
                       ${isToday ? 'ring-2 ring-pink-500 ring-offset-1' : ''}
                       ${phaseColor || 'border-gray-200 hover:border-pink-300'}
+                      ${cycleData[date.toDateString()]?.type === 'period_start' ? 'ring-2 ring-red-400 ring-offset-1' : ''}
                     `}
                   >
                     <span className="font-medium">{date.getDate()}</span>
+                    {cycleData[date.toDateString()]?.type === 'period_start' && (
+                      <div className="absolute top-1 right-1">
+                        <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">P</span>
+                        </div>
+                      </div>
+                    )}
                     {phaseData && (
                       <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
                         <div className="w-2 h-2 bg-current rounded-full opacity-60"></div>
@@ -442,6 +459,4 @@ const CycleCompanion = () => {
       </div>
     </div>
   );
-};
-
-export default CycleCompanion;
+}
